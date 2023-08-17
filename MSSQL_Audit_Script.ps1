@@ -571,26 +571,29 @@ function SecurityChecklists {
 
     HTMLPrinter -OpeningTag "<h1 id='CIS_benchmark' class='headers'>" -Content "CIS benchmark" -ClosingTag "</h1>"
 
-    # This query is based on CIS Microsoft SQL Server 2012 benchmark section 1.1.
-    # This query is based on CIS Microsoft SQL Server 2016 benchmark section 1.1.
+    # This query is based on CIS Microsoft SQL Server 2019 benchmark section 1.1.
     # Checks the productlevel and productversion.
     $SqlQuery = "SELECT
                     SERVERPROPERTY('ProductLevel') as SP_installed,
-                    SERVERPROPERTY('ProductVersion') as version
+                    SERVERPROPERTY('ProductVersion') as Version,
+                    SERVERPROPERTY('ProductUpdateLevel') as 'ProductUpdate_Level',  
+                    SERVERPROPERTY('ProductUpdateReference') as 'KB_Number';
                 ;"
     $Dataset = DataCollector $SqlQuery
     HTMLPrinter -OpeningTag "<p>" -Content "The server contains the following Service Pack and Version. These can be found on microsofts website." -ClosingTag "</p>"
-    HTMLPrinter -OpeningTag "<p>" -Content "Check if these match the expected versions." -ClosingTag "</p>"
-    HTMLPrinter -Table $Dataset -Columns @("SP_installed", "version")
-    CsvWriter 'CIS-Version' "SP_installed,version"
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "1.1 Ensure Latest SQL Server Cumulative and Security Updates are Installed (Manual)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if these match the expected versions. Visit <a target='_blank' href='https://learn.microsoft.com/en-us/troubleshoot/sql/releases/download-and-install-latest-updates#latest-updates-available-for-currently-supported-versions-of-sql-server'> MSSQL Versions </a> for more details." -ClosingTag "</p>"
+    HTMLPrinter -Table $Dataset -Columns @("SP_installed", "Version", "ProductUpdate_Level", "KB_Number")
+    CsvWriter 'CIS-Version' "SP_installed,Version,ProductUpdate_Level,KB_Number"
     foreach ($Row in $Dataset) {
-        CsvWriter 'CIS-Version' "$($Row.SP_installed),$($Row.version)"
+        CsvWriter 'CIS-Version' "$($Row.SP_installed),$($Row.Version),$($Row.ProductUpdate_Level),$($Row.KB_Number)"
     }
     
     
 
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 2.1.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 2.1.
+    # This query is based on CIS Microsoft SQL Server 2019 benchmark section 2.1.
     # Checks if the option 'Ad Hoc Distributed Queries' is disabled.
     $SqlQuery = "SELECT name                      AS name,
                         CAST(value AS int)        AS value_configured,
@@ -601,6 +604,7 @@ function SecurityChecklists {
                     C.name = 'Ad Hoc Distributed Queries'
                 ;"
     $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.1 Ensure 'Ad Hoc Distributed Queries' Server Configuration Option is set to '0' (Automated)" -ClosingTag "</h3></p>"
     HTMLPrinter -OpeningTag "<p>" -Content "Check if 'Add Hoc Distributed Queries' is disabled (0)." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("name", "value_configured", "value_in_use")
     CsvWriter 'CIS-Compliance' "name,value_configured,value_in_use,expected,database"
@@ -622,6 +626,7 @@ function SecurityChecklists {
                 C.name = 'clr enabled'
             ;"
     $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.2 Ensure 'CLR Enabled' Server Configuration Option is set to '0' (Automated)" -ClosingTag "</h3></p>"
     HTMLPrinter -OpeningTag "<p>" -Content "Check if 'clr enabled' is disabled (0)." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("name", "value_configured", "value_in_use")
     foreach ($Row in $Dataset) {
@@ -685,6 +690,7 @@ function SecurityChecklists {
                     C.name = 'cross db ownership chaining'
                 ;"
     $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.3 Ensure 'Cross DB Ownership Chaining' Server Configuration Option is set to '0' (Automated)" -ClosingTag "</h3></p>"
     HTMLPrinter -OpeningTag "<p>" -Content "Check if 'cross db ownership chaining' is disabled (0)." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("name", "value_configured", "value_in_use")
     foreach ($Row in $Dataset) {
@@ -703,6 +709,7 @@ function SecurityChecklists {
                     C.name = 'Database Mail XPs'
                 ;"
     $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.4 Ensure 'Database Mail XPs' Server Configuration Option is set to '0' (Automated)" -ClosingTag "</h3></p>"
     HTMLPrinter -OpeningTag "<p>" -Content "Check if 'Database Mail XPs' is disabled (0)." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("name", "value_configured", "value_in_use")
     foreach ($Row in $Dataset) {
@@ -721,6 +728,7 @@ function SecurityChecklists {
                     C.name = 'Ole Automation Procedures'
                 ;"
     $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.5 Ensure 'Ole Automation Procedures' Server Configuration Option is set to '0' (Automated)" -ClosingTag "</h3></p>"
     HTMLPrinter -OpeningTag "<p>" -Content "Check if 'Ole Automation Procedures' is disabled (0)." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("name", "value_configured", "value_in_use")
     foreach ($Row in $Dataset) {
@@ -739,6 +747,7 @@ function SecurityChecklists {
                     C.name = 'remote access'
                 ;"
     $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.6 Ensure 'Remote Access' Server Configuration Option is set to '0' (Automated)" -ClosingTag "</h3></p>"
     HTMLPrinter -OpeningTag "<p>" -Content "Check if 'remote access' is disabled (0)." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("name", "value_configured", "value_in_use")
     foreach ($Row in $Dataset) {
@@ -759,10 +768,12 @@ function SecurityChecklists {
                 ;"
     $Dataset = DataCollector $SqlQuery
     if ($Dataset.Rows.Count -gt 0) {
+        HTMLPrinter -OpeningTag "<p><h3>" -Content "2.7 Ensure 'Remote Admin Connections' Server Configuration Option is set to '0' (Automated)" -ClosingTag "</h3></p>"
         HTMLPrinter -OpeningTag "<p>" -Content "Check if 'remote admin connections' is disabled (0)." -ClosingTag "</p>"
         HTMLPrinter -Table $Dataset -Columns @("name", "value_configured", "value_in_use")
     }
     else {
+        HTMLPrinter -OpeningTag "<p><h3>" -Content "2.7 Ensure 'Remote Admin Connections' Server Configuration Option is set to '0' (Automated)" -ClosingTag "</h3></p>"
         HTMLPrinter -OpeningTag "<p>" -Content "This server is in a cluster. Therefore the check for 'remote admin connections' does not apply." -ClosingTag "</p>"
     }
     foreach ($Row in $Dataset) {
@@ -781,6 +792,7 @@ function SecurityChecklists {
                     C.name = 'scan for startup procs'
                 ;"
     $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.8 Ensure 'Scan For Startup Procs' Server Configuration Option is set to '0' (Automated)" -ClosingTag "</h3></p>"
     HTMLPrinter -OpeningTag "<p>" -Content "Check if 'scan for startup procs' is disabled (0)" -ClosingTag "</p>"
     HTMLPrinter -OpeningTag "<p>" -Content "Note that this option might be enabled to use certain audit traces, stored procedures and replication." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("name", "value_configured", "value_in_use")
@@ -791,6 +803,7 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 2.9.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 2.9.
     # Checks if the option 'is_trustworthy_on' is disabled.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.9 Ensure 'Trustworthy' Database Property is set to 'Off' (Automated)" -ClosingTag "</h3></p>"
     HTMLPrinter -OpeningTag "<p>" -Content "Check for the following databases if they have the (is_trustworthy_on set to False)." -ClosingTag "</p>"
     HTMLPrinter -OpeningTag "<p>" -Content "The 'msdb' database is required to have 'is_trustworthy_on set to True.`n" -ClosingTag "</p>"
     HTMLPrinter -Table $Script:DatabasesInfo -Columns @("name", "is_trustworthy_on")
@@ -799,36 +812,55 @@ function SecurityChecklists {
         CsvWriter 'CIS-Trustworthy' "$($Row.name),$($Row.is_trustworthy_on)"
     }
 
+    # This query is based on CIS Microsoft SQL Server 2012 benchmark section 2.10.
+    # This query is based on CIS Microsoft SQL Server 2016 benchmark section 2.10.
+    # Checks if unnecessary SQL server protocols are disabled
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.10 Ensure Unnecessary SQL Server Protocols are set to 'Disabled' (Manual)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check that unnecessary SQL server protocols are disabled." -ClosingTag "</p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "TCP/IP and Shared Memory protocols are enabled on all commercial editions.`n" -ClosingTag "</p>"
+    $SqlQuery = "SELECT 'Named Pipes' AS [Protocol], 
+                        iif(value_data = 1, 'Yes', 'No') AS isEnabled
+                 FROM sys.dm_server_registry
+                 WHERE registry_key LIKE '%np' AND value_name = 'Enabled'
+                 UNION
+                 SELECT 'Shared Memory', iif(value_data = 1, 'Yes', 'No')
+                 FROM sys.dm_server_registry
+                 WHERE registry_key LIKE '%sm' AND value_name = 'Enabled'
+                 UNION
+                 SELECT 'TCP/IP', iif(value_data = 1, 'Yes', 'No')
+                 FROM sys.dm_server_registry
+                 WHERE registry_key LIKE '%tcp' AND value_name = 'Enabled'
+                ;"
+    $Dataset = DataCollector $SqlQuery    
+    HTMLPrinter -Table $Dataset -Columns @("protocol", "isEnabled")
+    foreach ($Row in $Dataset) {
+        CsvWriter 'CIS-Compliance' "$($Row.protocol),$($Row.isEnabled)"
+    }
+
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 2.11.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 2.11.
     # Checks if the MSSQL Server does not use the default port 1433.
-    # Outdatedd but still works. Newer versions don't work when run from the machine it's hosted on.
-    $SqlQuery = "DECLARE
-                    @value nvarchar (256)
-                ;
-
-                EXECUTE
-                    master.dbo.xp_instance_regread
-                        N'HKEY_LOCAL_MACHINE',
-                        N'SOFTWARE\Microsoft\Microsoft SQL Server\MSSQLServer\SuperSocketNetLib\Tcp\IPALL',
-                        N'TcpPort',
-                        @value OUTPUT,
-                        N'no_output'
-                ;
-                    
-                SELECT
-                    @value AS TCP_port
+    # Outdated but still works. Newer versions don't work when run from the machine it's hosted on.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.11 Ensure SQL Server is configured to use non-standard ports (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check that the server does not use the default TCP_Port 1433." -ClosingTag "</p>"
+    $SqlQuery = "SELECT registry_key AS regKey,
+                        value_name AS name,
+                        value_data AS port
+                 FROM sys.dm_server_registry 
+                 WHERE value_name like '%Tcp%' and value_data='1433';
                 ;"
     $Dataset = DataCollector $SqlQuery
-    HTMLPrinter -OpeningTag "<p>" -Content "Check that the server does not use the default TCP_Port 1433." -ClosingTag "</p>"
-    HTMLPrinter -Table $Dataset -Columns @("TCP_port")
+    HTMLPrinter -Table $Dataset -Columns @("regKey", "name", "port")
     foreach ($Row in $Dataset) {
-        CsvWriter 'CIS-Compliance' "TCP_port,$($Row.TCP_port),,Not 1433"
+        CsvWriter 'CIS-Compliance' "$($Row.regKey),$($Row.name),$($Row.port)"
     }
 
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 2.12.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 2.12.
     # Checks if the server is hidden. If the server is in a cluster it might be necessary to have this turned off.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.12 Ensure 'Hide Instance' option is set to 'Yes' for Production SQL Server instances (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if the server is hidden (1)." -ClosingTag "</p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "If the server is in a cluster it might be necessary to have this turned off." -ClosingTag "</p>"
     $SqlQuery = "DECLARE
                     @getValue INT
                 ;
@@ -846,8 +878,6 @@ function SecurityChecklists {
                     SERVERPROPERTY('IsClustered') AS is_in_cluster
                 ;"
     $Dataset = DataCollector $SqlQuery
-    HTMLPrinter -OpeningTag "<p>" -Content "Check if the server is hidden (1)." -ClosingTag "</p>"
-    HTMLPrinter -OpeningTag "<p>" -Content "If the server is in a cluster it might be necessary to have this turned off." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("is_hidden", "is_in_cluster")
     CsvWriter 'CIS-Hidden-Cluster' "is_hidden,is_in_cluster,expected_is_hidden"
     foreach ($Row in $Dataset) {
@@ -857,9 +887,8 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 2.13.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 2.13.
     # Checks if the default 'sa' account is disabled.
-    # This query is based on CIS Microsoft SQL Server 2012 benchmark section 2.14.
-    # This query is based on CIS Microsoft SQL Server 2016 benchmark section 2.14.
-    # Checks if the default 'sa' account has been renamed.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.13 Ensure the 'sa' Login Account is set to 'Disabled' (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if the default 'sa' account is disabled (True)" -ClosingTag "</p>" 
     $SqlQuery = "SELECT
                     SP.sid         AS SID,
                     SP.name        AS name,
@@ -870,8 +899,27 @@ function SecurityChecklists {
                     SP.SID = 0x01
                 ;"
     $Dataset = DataCollector $SqlQuery
-    HTMLPrinter -OpeningTag "<p>" -Content "Check if the default 'sa' account is disabled (True)" -ClosingTag "</p>"
-    HTMLPrinter -OpeningTag "<p>" -Content "Check if the default 'sa' account has been renamed." -ClosingTag "</p>"
+    HTMLPrinter -Table $Dataset -Columns @("SID", "name", "is_disabled") 
+    CsvWriter 'CIS-sa-account' "SID,name,is_disabled"
+    foreach ($Row in $Dataset) {
+        CsvWriter 'CIS-sa-account' "$($Row.SID),$($Row.name),$($Row.is_disabled)"
+    }
+
+    # This query is based on CIS Microsoft SQL Server 2012 benchmark section 2.14.
+    # This query is based on CIS Microsoft SQL Server 2016 benchmark section 2.14.
+    # Checks if the default 'sa' account has been renamed.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.14 Ensure the 'sa' Login Account has been renamed (Automated) " -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if the default 'sa' account has been renamed." -ClosingTag "</p>"   
+    $SqlQuery = "SELECT
+                    SP.sid         AS SID,
+                    SP.name        AS name,
+                    SP.is_disabled AS is_disabled
+                FROM
+                    sys.server_principals AS SP
+                WHERE
+                    SP.SID = 0x01
+                ;"
+    $Dataset = DataCollector $SqlQuery
     HTMLPrinter -Table $Dataset -Columns @("SID", "name", "is_disabled")
     CsvWriter 'CIS-sa-account' "SID,name,is_disabled"
     foreach ($Row in $Dataset) {
@@ -881,6 +929,8 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 2.15.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 2.15.
     # Checks if the option 'xp_cmdshell' is disabled.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.?? Ensure the 'xp_cmdshell' feature is set to 'Disabled' (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if 'xp_cmdshell' is disabled (0)." -ClosingTag "</p>"  
     $SqlQuery = "SELECT name                      AS name,
                         CAST(value AS int)        AS value_configured,
                         CAST(value_in_use AS int) AS value_in_use
@@ -890,7 +940,6 @@ function SecurityChecklists {
                     C.name = 'xp_cmdshell'
                 ;"
     $Dataset = DataCollector $SqlQuery
-    HTMLPrinter -OpeningTag "<p>" -Content "Check if 'xp_cmdshell' is disabled (0)." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("name", "value_configured", "value_in_use")
     foreach ($Row in $Dataset) {
         CsvWriter 'CIS-Compliance' "$($Row.name),$($Row.value_configured),$($Row.value_in_use),0"
@@ -898,7 +947,9 @@ function SecurityChecklists {
 
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 2.16.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 2.16.
+    # This query is based on CIS Microsoft SQL Server 2019 benchmark section 2.15.
     # Checks if the is_auto_close_on option is turned off for contained databases.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.15 Ensure 'AUTO_CLOSE' is set to 'OFF' on contained" -ClosingTag "</h3></p>"
     HTMLPrinter -OpeningTag "<p>" -Content "Check if the 'is_auto_close_on' option is set to 'False' for the databases with 'containment' not set to '0'." -ClosingTag "</p>"
     HTMLPrinter -Table $Script:DatabasesInfo -Columns @("name", "containment", "containment_desc", "is_auto_close_on")
     CsvWriter 'CIS-containment' "name,containment,containment_desc,is_auto_close_on"
@@ -906,9 +957,9 @@ function SecurityChecklists {
         CsvWriter 'CIS-containment' "$($Row.name),$($Row.containment),$($Row.containment_desc),$($Row.is_auto_close_on)"
     }
 
-
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 2.17.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 2.17.
+    # This query is based on CIS Microsoft SQL Server 2019 benchmark section 2.16.
     # Checks if no login exists with the name 'sa'.
     $SqlQuery = "SELECT
                     SP.principal_id AS principal_ID,
@@ -924,6 +975,7 @@ function SecurityChecklists {
                     SP.principal_ID
                     ;"
     $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.16 Ensure no login exists with the name 'sa' (Automated)" -ClosingTag "</h3></p>"
     HTMLPrinter -OpeningTag "<p>" -Content "Check if no login exists with the name 'sa', even if this is not the original 'sa' account." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("principal_ID", "name", "is_disabled")
     CsvWriter 'CIS-sa' "principal_ID,name,is_disabled,expected"
@@ -932,14 +984,78 @@ function SecurityChecklists {
     }
 
 
+    # This second query is based on CIS Microsoft SQL Server 2019 benchmark section 2.2 and 2.17.
+    # Checks if the option 'clr enabled' is disabled or 'clr strict security' is enabled for 2019.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "2.17 Ensure 'clr strict security' Server Configuration Option is set to '1' (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if 'clr enabled' is disabled (0)." -ClosingTag "</p>"   
+    $SqlQuery = ""
+    $SqlQuery = "SELECT name                      AS name,
+                    CAST(value AS int)        AS value_configured,
+                    CAST(value_in_use AS int) AS value_in_use
+            FROM
+                sys.configurations AS C
+            WHERE
+                C.name = 'clr enabled'
+            ;"
+    $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -Table $Dataset -Columns @("name", "value_configured", "value_in_use") 
+    foreach ($Row in $Dataset) {
+        CsvWriter 'CIS-Compliance' "$($Row.name),$($Row.value_configured),$($Row.value_in_use),0"
+    }
+    # For 2019 (And above?) Only.
+    if ($Script:AllDatabases) {
+        foreach ($db in $Script:DatabasesInfo) {
+            $SqlQuery = "
+                SELECT 
+                    name            AS name,
+                    CAST(value as int)  as value_configured,
+                    CAST(value_in_use   as int) as value_in_use
+                FROM 
+                    sys.configurations
+                WHERE 
+                    name = 'clr strict security';
+            ;"
+            $Script:Database = $db.name
+            SqlConnectionBuilder
+            $Dataset = DataCollector $SqlQuery
+            if ($Dataset.Rows.Count -gt 0) {
+                HTMLPrinter -OpeningTag "<p>" -Content "Check if 'clr strict security' is enabled (1) for $($db.name)." -ClosingTag "</p>"
+                HTMLPrinter -Table $Dataset -Columns @("name", "value_configured", "value_in_use")
+                foreach ($Row in $Dataset) {
+                    CsvWriter 'CIS-Compliance' "$($Row.name),$($Row.value_configured),$($Row.value_in_use),0,$($db.name)"
+                }
+            }
+        }
+        $Script:Database = $Script:OriginalDatabase
+    }
+    else {
+        if ($Script:Version -ge 19) {
+            $SqlQuery = "SELECT name            AS name,
+                        CAST(value as int)  as value_configured,
+                        CAST(value_in_use   as int) as value_in_use
+                    FROM 
+                        sys.configurations
+                    WHERE 
+                        name = 'clr strict security';
+                    ;"
+            $Dataset = DataCollector $SqlQuery
+            HTMLPrinter -OpeningTag "<p>" -Content "Check if 'clr strict security' is enabled (1)." -ClosingTag "</p>"
+            HTMLPrinter -Table $Dataset -Columns @("name", "value_configured", "value_in_use")
+            foreach ($Row in $Dataset) {
+                CsvWriter 'CIS-Compliance' "$($Row.name),$($Row.value_configured),$($Row.value_in_use),0"
+            }
+        }
+    }
+
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 3.1.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 3.1.
     # Checks if the 'Server Authentication' property is set to 'Windows Authentication Mode'.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "3.1 Ensure 'Server Authentication' Property is set to 'Windows Authentication Mode' (Automated)" -ClosingTag "</h3></p>"    
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if 'login_mode' is set to 'Windows Authentication Mode' only (1)." -ClosingTag "</p>"   
     $SqlQuery = "SELECT
                     SERVERPROPERTY('IsIntegratedSecurityOnly') AS [login_mode]
                 ;"
     $Dataset = DataCollector $SqlQuery
-    HTMLPrinter -OpeningTag "<p>" -Content "Check if 'login_mode' is set to 'Windows Authentication Mode' only (1)." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("login_mode")
     foreach ($Row in $Dataset) {
         CsvWriter 'CIS-Compliance' "login_mode,$($Row.login_mode),,1"
@@ -948,6 +1064,9 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 3.2.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 3.2.
     # Checks if the guest user has it's rights revoked on the databases, with the exception of the msdb
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "3.2 Ensure CONNECT permissions on the 'guest' user is Revoked within all SQL Server databases (Automated)" -ClosingTag "</h3></p>"    
+    HTMLPrinter -OpeningTag "<p>" -Content "Check for each of the following databases if the 'CONNECT' permission has been revoked for the 'guest' user." -ClosingTag "</p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "The connect permission is required for the 'master', 'tempdb', 'msdb' databases. Therefore they can be ignored." -ClosingTag "</p>"    
     $SqlQuery = "SELECT
                     DB_NAME()            AS database_name,
                     'guest'              AS DB_user,
@@ -958,8 +1077,6 @@ function SecurityChecklists {
                 WHERE
                     DP.[grantee_principal_id] = DATABASE_PRINCIPAL_ID('guest')
                 ;"
-    HTMLPrinter -OpeningTag "<p>" -Content "Check for each of the following databases if the 'CONNECT' permission has been revoked for the 'guest' user." -ClosingTag "</p>"
-    HTMLPrinter -OpeningTag "<p>" -Content "The connect permission is required for the 'master', 'tempdb', 'msdb' databases. Therefore they can be ignored." -ClosingTag "</p>"
     CsvWriter 'CIS-CONNECT-permission' "database_name,DB_user,permission_name,state_desc"
     if ($Script:AllDatabases) {
         foreach ($db in $Script:DatabasesInfo) {
@@ -983,6 +1100,8 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 3.3
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 3.3
     # Checks if 'Orphaned Users' are dropped from SQL Server Databases.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "3.3 Ensure 'Orphaned Users' are Dropped From SQL Server Databases (Automated)" -ClosingTag "</h3></p>"    
+    HTMLPrinter -OpeningTag "<p>" -Content "Check that orphaned users are removed." -ClosingTag "</p>"
     $SqlQuery = "EXEC
                     sp_change_users_login
                         @Action = 'Report'
@@ -1025,6 +1144,8 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 3.4.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 3.4.
     # Checks if SQL authentication is not used in contained databases.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "3.4 Ensure SQL Authentication is not used in contained databases (Automated)" -ClosingTag "</h3></p>"    
+    HTMLPrinter -OpeningTag "<p>" -Content "Check that orphaned users are removed." -ClosingTag "</p>"
     $SqlQuery = "SELECT 
                     DB_NAME()             AS database_name,
                     P.name                AS DB_user,
@@ -1076,9 +1197,53 @@ function SecurityChecklists {
         }
     }
 
+    # This query is based on CIS Microsoft SQL Server 2019 benchmark section 3.5
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "3.5 Ensure the SQL Server's MSSQL Service Account is Not an Administrator (Manual)" -ClosingTag "</h3></p>"    
+    HTMLPrinter -OpeningTag "<p>" -Content "Check the MSSQL Service Account is not an administrator" -ClosingTag "</p>"
+    $SqlQuery = "SELECT servicename, service_account
+                 FROM sys.dm_server_services
+                 WHERE servicename = 'SQL Server (MSSQLSERVER)'
+                ;"
+    $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -Table $Dataset -Columns @("servicename", "service_account")
+    CsvWriter 'CIS-mssql-service-account' "servicename,service_account"
+    foreach ($Row in $Dataset) {
+        CsvWriter 'CIS-mssql-service-account' "$($Row.servicename),$($Row.service_account)"
+    }
+
+    # This query is based on CIS Microsoft SQL Server 2019 benchmark section 3.6
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "3.6 Ensure the SQL Server's SQLAgent Service Account is Not an Administrator (Manual)" -ClosingTag "</h3></p>"    
+    HTMLPrinter -OpeningTag "<p>" -Content "Check the SQLAgent Service Account is not an administrator" -ClosingTag "</p>"
+    $SqlQuery = "SELECT servicename, service_account
+                 FROM sys.dm_server_services
+                 WHERE servicename = 'SQL Server-Agent (MSSQLSERVER)'
+                ;"
+    $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -Table $Dataset -Columns @("servicename", "service_account")
+    CsvWriter 'CIS-sqlagent-service-account' "servicename,service_account"
+    foreach ($Row in $Dataset) {
+        CsvWriter 'CIS-sqlagent-service-account' "$($Row.servicename),$($Row.service_account)"
+    }
+
+    # This query is based on CIS Microsoft SQL Server 2019 benchmark section 3.7
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "3.7 Ensure the SQL Server's Full-Text Service Account is Not an Administrator (Manual)" -ClosingTag "</h3></p>"    
+    HTMLPrinter -OpeningTag "<p>" -Content "Check the Full-Text Service Account is not an administrator" -ClosingTag "</p>"
+    $SqlQuery = "SELECT servicename, service_account
+                 FROM sys.dm_server_services
+                 WHERE servicename = 'SQL Full-text Filter Daemon Launcher (MSSQLSERVER)'
+                ;"
+    $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -Table $Dataset -Columns @("servicename", "service_account")
+    CsvWriter 'CIS-fulltextfilter-service-account' "servicename,service_account"
+    foreach ($Row in $Dataset) {
+        CsvWriter 'CIS-fulltextfilter-service-account' "$($Row.servicename),$($Row.service_account)"
+    }    
+
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 3.8.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 3.8.
     # Checks if only the default permissions specified by Microsoft are granted to the public server role.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "3.8 Ensure only the default permissions specified by Microsoft are granted to the public server role (Automated)" -ClosingTag "</h3></p>"    
+    HTMLPrinter -OpeningTag "<p>" -Content "Checks if only the default permissions specified by Microsoft are granted to the public server role." -ClosingTag "</p>"
     $SqlQuery = "SELECT
                     *
                 FROM
@@ -1112,6 +1277,12 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 3.10.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 3.10.
     # Checks if it is not allowed for 'WINDOWS_GROUP' users to be added to the server.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "3.9 Ensure Windows BUILTIN groups are not SQL Logins (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "See output below for CIS control 3.10." -ClosingTag "</p>"
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "3.10 Ensure Windows local groups are not SQL Logins (Automated) " -ClosingTag "</h3></p>"     
+    HTMLPrinter -OpeningTag "<p>" -Content "The following list contains all server principals." -ClosingTag "</p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if none of these principals are Windows BUILTIN groups or accounts." -ClosingTag "</p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if there are no WINDOWS_GROUP users. (type_desc = WINDOWS_GROUP and name contains the MachineName)`n" -ClosingTag "</p>"
     $SqlQuery = "SELECT
                     PR.[name]      AS name,
                     PR.[type_desc] AS type_desc
@@ -1137,9 +1308,6 @@ function SecurityChecklists {
                         AND pr.[name] like CAST(SERVERPROPERTY('MachineName') AS nvarchar) + '%')	
                     ;"
     $Dataset = DataCollector $SqlQuery
-    HTMLPrinter -OpeningTag "<p>" -Content "The following list contains all server principals." -ClosingTag "</p>"
-    HTMLPrinter -OpeningTag "<p>" -Content "Check if none of these principals are Windows BUILTIN groups or accounts." -ClosingTag "</p>"
-    HTMLPrinter -OpeningTag "<p>" -Content "Check if there are no WINDOWS_GROUP users. (type_desc = WINDOWS_GROUP and name contains the MachineName)`n" -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("name", "type_desc")
     CsvWriter 'CIS-server-principals' "name,type_desc"
     foreach ($Row in $Dataset) {
@@ -1149,6 +1317,7 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 3.11.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 3.11.
     # Checks if the 'public' server role does not have access to the SQL Agent proxies.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "3.11 Ensure the public role in the msdb database is not granted access to SQL Agent proxies (Automated)" -ClosingTag "</h3></p>"
     $SqlQuery = "SELECT
                     sp.name AS proxy_name
                 FROM
@@ -1176,11 +1345,27 @@ function SecurityChecklists {
     $Script:Database = $Script:OriginalDatabase
     SqlConnectionBuilder
     
+    # This check is based on CIS Microsoft SQL Server 2019 benchmark section 4.1.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "4.1 Ensure 'MUST_CHANGE' Option is set to 'ON' for All SQL Authenticated Logins (Manual)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check enabled DB users for policy enforcement. Table below should be empty." -ClosingTag "</p>"
+    $SqlQuery = "SELECT name, is_disabled, is_policy_checked
+                 FROM sys.sql_logins
+                 WHERE type_desc = 'SQL_LOGIN' AND is_policy_checked = 0 and is_disabled = 0
+                ;"
+    $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -Table $Dataset -Columns @("name", "is_disabled", "is_policy_checked")
+    CsvWriter 'CIS-CHECK-PWPOLICY' "name,is_disabled,is_policy_checked"
+    foreach ($Row in $Dataset) {
+        CsvWriter 'CIS-CHECK-PWPOLICY' "$($Row.name),$($Row.is_disabled),$($Row.is_policy_checked)"
+    }  
+
     # This check is based on CIS Microsoft SQL Server 2012 benchmark section 4.2.
     # This check is based on CIS Microsoft SQL Server 2016 benchmark section 4.2.
     # Checks if the 'CHECK_EXPIRATION' option is set to 'ON' for all SQL Authenticated Logins with the sysadmin role.
     # Checks if the 'CHECK_EXPIRATION' option is set to 'ON' for all SQL Authenticated Logins who have been granted the control server permission.
     # The second UNION ALL has been added to check users who have been granted the CONTROL SERVER permission through a server role.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "4.2 Ensure 'CHECK_EXPIRATION' Option is set to 'ON' for All SQL Authenticated Logins Within the Sysadmin Role (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if SQL Authenticated Logins have the 'CHECK_EXPIRATION' option set to on. System account 'sa' can be ignored." -ClosingTag "</p>"
     $SqlQuery = "SELECT
                     L.name                  AS name,
                     'sysadmin membership'   AS access_method,
@@ -1227,7 +1412,6 @@ function SecurityChecklists {
                 )
                 ;"
     $Dataset = DataCollector $SqlQuery
-    HTMLPrinter -OpeningTag "<p>" -Content "Check if SQL Authenticated Logins have the 'CHECK_EXPIRATION' option set to on." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("name", "access_method", "is_expiration_checked")
     CsvWriter 'CIS-CHECK-EXPIRATION' "name,access_method,is_expiration_checked"
     foreach ($Row in $Dataset) {
@@ -1238,6 +1422,8 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 4.3.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 4.3.
     # Checks if the 'CHECK_POLICY' Option is set to 'True' for all SQL Authenticated Logins.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "4.3 Ensure 'CHECK_POLICY' Option is set to 'ON' for All SQL Authenticated Logins (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if 'is_policy_checked' is set to 'True'." -ClosingTag "</p>"
     $SqlQuery = "SELECT
                     SL.name              AS name,
                     SL.is_disabled       AS is_disabled,
@@ -1249,7 +1435,6 @@ function SecurityChecklists {
                     Is_disabled
                 ;"
     $Dataset = DataCollector $SqlQuery
-    HTMLPrinter -OpeningTag "<p>" -Content "Check if 'is_policy_checked' is set to 'True'." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("name", "is_disabled", "is_policy_checked")
     CsvWriter 'CIS-Check-Policy' "name,is_disabled,is_policy_checked"
     foreach ($Row in $Dataset) {
@@ -1259,6 +1444,9 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 5.1.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 5.1.
     # Checks if the maximum number of error log files is set greater than or equal to 12.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "5.1 Ensure 'Maximum number of error log files' is set to greater than or equal to '12' (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if the 'NumberOfLogFiles' is 12 or higher." -ClosingTag "</p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "If the number is -1, this might mean that the 'Limit the number of error log files before they are recycled' checkmark is not checked." -ClosingTag "</p>"
     $SqlQuery = "DECLARE
                     @NumErrorLogs int
                 ;
@@ -1275,8 +1463,6 @@ function SecurityChecklists {
                     ISNULL(@NumErrorLogs, -1) AS [number_of_log_files]
                 ;"
     $Dataset = DataCollector $SqlQuery
-    HTMLPrinter -OpeningTag "<p>" -Content "Check if the 'NumberOfLogFiles' is 12 or higher." -ClosingTag "</p>"
-    HTMLPrinter -OpeningTag "<p>" -Content "If the number is -1, this might mean that the 'Limit the number of error log files before they are recycled' checkmark is not checked." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("number_of_log_files")
     foreach ($Row in $Dataset) {
         CsvWriter 'CIS-Compliance' "number_of_log_files,$($Row.number_of_log_files),,>12"
@@ -1285,6 +1471,8 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 5.2.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 5.2.
     # Checks if the default trace is enabled.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "5.2 Ensure 'Default Trace Enabled' Server Configuration Option is set to '1' (Automated) " -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if 'default trace enabled' is enabled (1)." -ClosingTag "</p>"
     $SqlQuery = "SELECT name                      AS name,
                         CAST(value AS int)        AS value_configured,
                         CAST(value_in_use AS int) AS value_in_use
@@ -1294,7 +1482,6 @@ function SecurityChecklists {
                     C.name = 'default trace enabled'
                 ;"
     $Dataset = DataCollector $SqlQuery
-    HTMLPrinter -OpeningTag "<p>" -Content "Check if 'default trace enabled' is enabled (1)." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("name", "value_configured", "value_in_use")
     foreach ($Row in $Dataset) {
         CsvWriter 'CIS-Compliance' "$($Row.name),$($Row.value_configured),$($Row.value_in_use),1"
@@ -1303,12 +1490,13 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 5.3.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 5.3.
     # Checks if the 'Login Auditing' is set to 'faled logins'
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "5.3 Ensure 'Login Auditing' is set to 'failed logins' (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if the 'audit level' is configured to failure." -ClosingTag "</p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "A value of 'all' is also accepted, however it is recommended to check this with the SQL Server audit feature." -ClosingTag "</p>"
     $SqlQuery = "EXEC
                     xp_loginconfig 'audit level'
                 ;"
     $Dataset = DataCollector $SqlQuery
-    HTMLPrinter -OpeningTag "<p>" -Content "Check if the 'audit level' is configured to failure." -ClosingTag "</p>"
-    HTMLPrinter -OpeningTag "<p>" -Content "A value of 'all' is also accepted, however it is recommended to check this with the SQL Server audit feature." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("name", "config_value")
     foreach ($Row in $Dataset) {
         CsvWriter 'CIS-Compliance' "$($Row.name),$($Row.config_value),,failure"
@@ -1317,6 +1505,10 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 5.4.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 5.4.
     # Checks if the 'SQL Server Audit' is set to capture both 'failed' and 'successful logins'.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "5.4 Ensure 'SQL Server Audit' is set to capture both 'failed' and 'successful logins' (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "3 Rows should be returned. If the table is empty, this is a finding." -ClosingTag "</p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "For these rows check if both the 'Audit Enabled' and 'Audit Specification Enabled' are set to 'Y'." -ClosingTag "</p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Also check if 'audited_result' is set to 'SUCCESS AND FAILURE'." -ClosingTag "</p>"
     $SqlQuery = "SELECT
                     S.name                AS 'audit_name',
                     CASE
@@ -1348,18 +1540,21 @@ function SecurityChecklists {
                     audit_action_name
                 ;"
     $Dataset = DataCollector $SqlQuery
-    HTMLPrinter -OpeningTag "<p>" -Content "3 Rows should be returned." -ClosingTag "</p>"
-    HTMLPrinter -OpeningTag "<p>" -Content "For these rows check if both the 'Audit Enabled' and 'Audit Specification Enabled' are set to 'Y'." -ClosingTag "</p>"
-    HTMLPrinter -OpeningTag "<p>" -Content "Also check if 'audited_result' is set to 'SUCCESS AND FAILURE'." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("audit_name", "audit_enabled", "write_location", "audit_specification_name", "audit_specification_enabled", "audit_action_name", "audited_result")
     CsvWriter 'CIS-Audit-Enabled' "audit_name,audit_enabled,write_location,audit_specification_name,audit_specification_enabled,audit_action_name,audited_result"
     foreach ($Row in $Dataset) {
         CsvWriter 'CIS-Audit-Enabled' "$($Row.audit_name),$($Row.audit_enabled),$($Row.write_location),$($Row.audit_specification_name),$($Row.audit_specification_enabled),$($Row.audit_action_name),$($Row.audited_result)"
     }
 
+    # This query is based on CIS Microsoft SQL Server 2019 benchmark section 6.1.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "6.1 Ensure Database and Application User Input is Sanitized (Manual)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check with the application teams to ensure any database interaction is through the use of stored procedures and not dynamic SQL." -ClosingTag "</p>" 
+    
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 6.2.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 6.2.
     # Checks if user defined CLR assemblies are set to 'SAFE_ACCESS'.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "6.2 Ensure 'CLR Assembly Permission Set' is set to 'SAFE_ACCESS' for All CLR Assemblies (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if all is_user_defined assemblies have 'SAFE_ACCESS' set under 'permission_set_desc'." -ClosingTag "</p>"
     $SqlQuery = "SELECT
                     A.name                AS name,
                     A.permission_set_desc AS permission_set_desc,
@@ -1371,7 +1566,6 @@ function SecurityChecklists {
                     permission_set_desc
                 ;"
     $Dataset = DataCollector $SqlQuery
-    HTMLPrinter -OpeningTag "<p>" -Content "Check if all is_user_defined assemblies have 'SAFE_ACCESS' set under 'permission_set_desc'." -ClosingTag "</p>"
     HTMLPrinter -Table $Dataset -Columns @("name", "permission_set_desc", "is_user_defined")
     CsvWriter 'CIS-Safe-Access' "name,permission_set_desc,is_user_defined"
     foreach ($Row in $Dataset) {
@@ -1381,14 +1575,15 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 7.1.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 7.1.
     # Checks if 'Symmetric Key encryption algorithm' is set to 'AES_128' or higher.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "7.1 Ensure 'Symmetric Key encryption algorithm' is set to 'AES_128' or higher in non-system databases (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check for every databse if the 'algorithm_desc' is set to 'AES_128', 'AES_192' or 'AES_256'." -ClosingTag "</p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "If no output is returned for a database then this means that no symmetric key is available for that database.`n" -ClosingTag "</p>"
     $SqlQuery = "SELECT 
                         DB_NAME() AS database_name,
                         SK.*
                 FROM
                     sys.symmetric_keys AS SK
                 ;"
-    HTMLPrinter -OpeningTag "<p>" -Content "Check for every databse if the 'algorithm_desc' is set to 'AES_128', 'AES_192' or 'AES_256'." -ClosingTag "</p>"
-    HTMLPrinter -OpeningTag "<p>" -Content "If no output is returned for a database then this means that no symmetric key is available for that database.`n" -ClosingTag "</p>"
     CsvWriter 'CIS-SKE' "database_name,name,principal_id,symmetric_key_id,key_length,key_algorithm,algorithm_desc,create_date,modify_date,key_guid,key_thumbprint,provider_type,cryptographic_provider_guid,cryptographic_provider_algid,RowError,RowState,Table,ItemArray,HasErrors"
     if ($Script:AllDatabases) {
         foreach ($db in $Script:DatabasesInfo) {
@@ -1412,6 +1607,9 @@ function SecurityChecklists {
     # This query is based on CIS Microsoft SQL Server 2012 benchmark section 7.2.
     # This query is based on CIS Microsoft SQL Server 2016 benchmark section 7.2.
     # Checks if 'Asymmetric Key Size' is set to 'RSA_2048'.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "7.2 Ensure Asymmetric Key Size is set to 'greater than or equal to 2048' in non-system databases (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check for every database if the 'key_length' is set to '2048'." -ClosingTag "</p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "If no output is returned for a database then this means that no asymmetric key is available for that database.`n" -ClosingTag "</p>"
     $SqlQuery = "SELECT
                     DB_NAME()     AS database_name,
                     AK.name       AS key_name,
@@ -1419,8 +1617,6 @@ function SecurityChecklists {
                 FROM
                     sys.asymmetric_keys AS AK
                 ;"
-    HTMLPrinter -OpeningTag "<p>" -Content "Check for every databse if the 'key_length' is set to '2048'." -ClosingTag "</p>"
-    HTMLPrinter -OpeningTag "<p>" -Content "If no output is returned for a database then this means that no asymmetric key is available for that database.`n" -ClosingTag "</p>"
     CsvWriter 'CIS-key-length' "database_name,key_name,key_length,expected"
     if ($Script:AllDatabases) {
         foreach ($db in $Script:DatabasesInfo) {
@@ -1442,7 +1638,105 @@ function SecurityChecklists {
             CsvWriter 'CIS-key-length' "$($Row.database_name),$($Row.key_name),$($Row.key_length),2048"
         }
     }
-}
+
+    # This query is based on CIS Microsoft SQL Server 2019 benchmark section 7.3.
+    # Checks if database backups are encrypted.
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "7.3 Ensure Database Backups are Encrypted (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if database backups are encrypted." -ClosingTag "</p>"
+    $SqlQuery = "SELECT DISTINCT
+                        b.key_algorithm AS algo,
+                        b.encryptor_type AS enc_type,
+                        d.is_encrypted AS isEncrypted,
+                        b.database_name AS databaseName,
+                        b.server_name AS serverName
+                 FROM msdb.dbo.backupset b
+                 INNER JOIN sys.databases d ON b.database_name = d.name
+                 WHERE b.key_algorithm IS NULL AND b.encryptor_type IS NULL AND d.is_encrypted = 0;
+                ;"
+    $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -Table $Dataset -Columns @("algo", "enc_type", "isEncrypted", "databaseName", "serverName")
+    CsvWriter 'CIS-Backup-Encryption' "algo,enc_type,isEncrypted,databaseName,serverName"
+    foreach ($Row in $Dataset) {
+        CsvWriter 'CIS-Backup-Encryption' "$($Row.algo),$($Row.enc_type),$($Row.isEncrypted),$($Row.databaseName),$($Row.serverName)"
+    }
+
+    # This query is based on CIS Microsoft SQL Server 2019 benchmark section 7.4.
+    # Checks if network encryption is configured and enabled
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "7.4 Ensure Network Encryption is Configured and Enabled (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if network encryption is enabled." -ClosingTag "</p>"
+    $SqlQuery = "USE [master];
+                 SELECT DISTINCT net_transport, encrypt_option
+                 FROM sys.dm_exec_connections
+                ;"
+    $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -Table $Dataset -Columns @("net_transport", "encrypt_option")
+    CsvWriter 'CIS-Network-Encryption' "net_transport,encrypt_option"
+    foreach ($Row in $Dataset) {
+        CsvWriter 'CIS-Network-Encryption' "$($Row.net_transport),$($Row.encrypt_option)"
+    }    
+
+    # This query is based on CIS Microsoft SQL Server 2019 benchmark section 7.5.
+    # Checks if databases are encrypted with TDE
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "7.5 Ensure Databases are Encrypted with TDE (Automated)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if databases are encrypted." -ClosingTag "</p>"
+    $SqlQuery = "select database_id, name, is_encrypted 
+                 from sys.databases 
+                 where database_id > 4 and is_encrypted != 1
+                ;"
+    $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -Table $Dataset -Columns @("database_id", "name", "is_encrypted")
+    CsvWriter 'CIS-Database-TDE-Encryption' "database_id,name,is_encrypted"
+    foreach ($Row in $Dataset) {
+        CsvWriter 'CIS-Database-TDE-Encryption' "$($Row.database_id),$($Row.name),$($Row.is_encrypted)"
+    }
+
+    # This query is based on CIS Microsoft SQL Server 2019 benchmark section 8.1.
+    # Checks if databases are encrypted with TDE
+    HTMLPrinter -OpeningTag "<p><h3>" -Content "8.1 Ensure 'SQL Server Browser Service' is configured correctly (Manual)" -ClosingTag "</h3></p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Check if SQL Server Browser Service is configured correctly." -ClosingTag "</p>"
+    HTMLPrinter -OpeningTag "<p>" -Content "Enable or disable the service as needed for your environment. The SQL Server Browser service is disabled if only a default instance is installed on the 
+server. If a named instance is installed, the default value is for the SQL Server Browser service to be configured as Automatic for startup." -ClosingTag "</p>"
+    $SqlQuery = "DECLARE @ServiceStatus TABLE (Status NVARCHAR(20));
+                 DECLARE @ServiceStartType int;
+                 DECLARE @ServiceAccount NVARCHAR(256);
+                 DECLARE @StartTypeValue NVARCHAR(10);
+                 DECLARE @ServiceStartTypeNvarchar NVARCHAR(20);
+
+                 INSERT INTO @ServiceStatus
+                 EXEC xp_servicecontrol N'querystate', N'SQLBrowser';
+                 EXEC xp_instance_regread
+                        N'HKEY_LOCAL_MACHINE',
+                        N'SYSTEM\CurrentControlSet\Services\SQLBrowser',
+                        N'Start',
+                        @ServiceStartType OUTPUT;
+                 EXEC xp_instance_regread
+                        N'HKEY_LOCAL_MACHINE',
+                        N'SYSTEM\CurrentControlSet\Services\SQLBrowser',
+                        N'ObjectName',
+                        @ServiceAccount OUTPUT;
+                
+                 SET @ServiceStartTypeNvarchar = CASE 
+                    WHEN @ServiceStartType = 2 THEN 'Automatic'
+                    WHEN @ServiceStartType = 3 THEN 'Manual'
+                    WHEN @ServiceStartType = 4 THEN 'Disabled'
+                    ELSE 'Unknown'
+                 END;
+
+                 SELECT 'Service Status' AS [Description], Status AS [Value]
+                 FROM @ServiceStatus 
+                 UNION ALL
+                 SELECT 'Start Type' AS [Description], @ServiceStartTypeNvarchar AS [Value]
+                 UNION ALL
+                 SELECT 'Service Account' AS [Description], @ServiceAccount AS [Value]
+                ;"
+    $Dataset = DataCollector $SqlQuery
+    HTMLPrinter -Table $Dataset -Columns @("description", "value")
+    CsvWriter 'CIS-SQL-Browser-Service' "description,value"
+    foreach ($Row in $Dataset) {
+        CsvWriter 'CIS-SQL-Browser-Service' "$($Row.description),$($Row.value)"
+    }  
+    
+    }   
 
 function UserManagement {
     <#
